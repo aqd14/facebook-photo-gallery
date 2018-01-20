@@ -80,6 +80,7 @@
             } else {
                 $("#fb-login-btn").show();
                 $("#logout").hide();
+                $("#freewall").empty();
             }
         }
 
@@ -169,12 +170,12 @@
             images.find('img').load(function() {
                 wall.fitWidth();
             });
+        }
 
-            function logout() {
-                FB.logout(function (response) {
-                    displayUserPhotos(false);
-                })
-            }
+        function logout() {
+            FB.logout(function (response) {
+                displayUserPhotos(false);
+            });
         }
     </script>
     <!--<div class="fb-login-button" data-max-rows="1" data-size="large" data-button-type="continue_with"-->
