@@ -1,6 +1,8 @@
 ## facebook-photo-gallery
 Dynamically layout uploaded/tagged Facebook photos.
 
+![alt text](https://github.com/aqd14/facebook-photo-gallery/blob/master/screenshot.png)
+
 ### Descriptions
 This simple web project use Facebook Graph APIs to authenticate login and get user's photos to display.
 
