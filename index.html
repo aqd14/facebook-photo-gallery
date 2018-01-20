@@ -2,13 +2,209 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Facebook Photos Gallery</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://bootswatch.com/4/darkly/bootstrap.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="freewall.js"></script>
+
+    <style media="screen">
+        #fb-login-btn {
+            margin: 20px;
+        }
+
+        #friend-list, #logout {
+            display: none;
+        }
+
+        .free-wall {
+            margin: 15px;
+        }
+
+        .brick img {
+            margin: 0;
+            display: block;
+        }
+    </style>
 </head>
 <body>
+    <script>
+        window.fbAsyncInit = function () {
+            FB.init({
+                appId: '209778196250763',
+                cookie: true,
+                xfbml: true,
+                version: 'v2.11'
+            });
 
+            FB.getLoginStatus(function (repsonse) {
+                statusChangeCallBack(repsonse);
+            })
+            // FB.AppEvents.logPageView();
+        };
+
+        (function (d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) {
+                return;
+            }
+            js = d.createElement(s);
+            js.id = id;
+            js.src = "https://connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+
+        function statusChangeCallBack(reponse) {
+            if (reponse.status === 'connected') {
+                displayUserPhotos(true);
+            } else {
+                displayUserPhotos(false)
+            }
+        }
+
+        function checkLoginState() {
+            FB.getLoginStatus(function(response) {
+                statusChangeCallBack(response);
+            });
+        }
+
+        function displayUserPhotos(isLoggedIn) {
+            if (isLoggedIn) {
+                // request to get a user's friend list, including name and profile picture
+                $("#fb-login-btn").hide();
+                $("#logout").show();
+
+                getUploadedPhotos();
+            } else {
+                $("#fb-login-btn").show();
+                $("#logout").hide();
+            }
+        }
+
+        function getUploadedPhotos() {
+            FB.api('/me/photos?type=uploaded', function(response) {
+                if (response && !response.error) {
+                    var photo_ids = [];
+                    // console.log(response);
+                    // var values = response[0].attributes;
+                    // var json_values = JSON.stringify(values);
+                    // var url_safe_json_values = encodeURIComponent(json_values);
+                    var data = response.data;
+                    data.forEach(function(item) {
+                        photo_ids.push(item.id);
+                    });
+                    // console.log(photo_ids);
+                    showPhotos(photo_ids);
+                }
+            });
+        }
+
+        /**
+         * Display photo on website
+         */
+        function showPhotos(photo_ids) {
+            if (photo_ids != null && photo_ids.length > 0) {
+                // console.log(photo_ids);
+                promises = [];
+                photo_ids.forEach(function(photo_id) {
+                    // console.log('photo id = ' + photo_id);
+                    extractPhotoUrl(photo_id, function(promise) {
+                        // console.log('Url = ' + url);
+                        promises.push(promise);
+                    });
+                });
+                // console.log(urls);
+                // return urls;
+                Promise.all(promises).then(function (urls) {
+                    console.log(urls);
+                    // renderPhoto(urls);
+                })
+            } else {
+                alert("Photo IDs is wrong!");
+            }
+        }
+
+        var html = '';
+        function extractPhotoUrl(photo_id) {
+            return new Promise(function (resolve, reject) {
+                FB.api("/".concat(photo_id, "?fields=album,images,likes"), function (response) {
+                    if (response && !response.error) {
+                        var album = response.album;
+                        var images = response.images;
+                        var likes = response.likes;
+
+                        // console.log('Album = ' + album.name);
+                        // console.log('Returned URL = ' + images[0].source);
+                        // console.log('Num likes = ' + likes.data.length);
+                        renderPhoto(images[4].source);
+                        resolve(images[0].source);
+                    }
+                });
+            })
+        }
+
+        function renderPhoto(url) {
+            console.log('render photo: ' + url)
+            var temp = "<div class='brick' style='width:{width}px;'><img src={url} width='100%'></div>";
+            // var temp = "<div class='cell' style='width:{width}px; height: {height}px; background-image: url(i/photo/{index}.jpg)'></div>";
+            var w = 1 + 3 * Math.random() << 0;
+            html += temp.replace(/\{width\}/g, w*150).replace("{url}", url);
+
+            $("#freewall").html(html);
+
+            var wall = new Freewall("#freewall");
+            wall.reset({
+                selector: '.brick',
+                animate: true,
+                cellW: 150,
+                cellH: 'auto',
+                onResize: function() {
+                    wall.fitWidth();
+                }
+            });
+
+            var images = wall.container.find('.brick');
+            images.find('img').load(function() {
+                wall.fitWidth();
+            });
+
+            function logout() {
+                FB.logout(function (response) {
+                    displayUserPhotos(false);
+                })
+            }
+        }
+    </script>
+    <!--<div class="fb-login-button" data-max-rows="1" data-size="large" data-button-type="continue_with"-->
+         <!--data-show-faces="false" data-auto-logout-link="false" data-use-continue-as="false" onclick="login()"></div>-->
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <a class="navbar-brand" href="#">Facebook Photo Gallery</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarColor01">
+            <ul class="navbar-nav mr-auto">
+            </ul>
+            <ul class="nav navbar-nav mr-auto navbar-right">
+                <li>
+                    <a id="logout" onclick="logout()">Logout</a>
+                </li>
+                <fb:login-button
+                    id="fb-login-btn"
+                    scope="public_profile,email,user_friends"
+                    onlogin="checkLoginState();">
+                </fb:login-button>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="friend-list"></div>
+        <div id="freewall" class="free-wall"></div>
+    </div>
 </body>
 </html>
